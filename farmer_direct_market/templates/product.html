@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stars, csrf with context %}
+{% block title %}{{ p.product_name }}{% endblock %}
+{% block content %}
+<p style="margin-top:22px"><a href="{{ url_for('index') }}">← Back to market</a></p>
+<div class="two">
+  <div class="card">
+    <div class="cat-{{ p.category }}" style="height:300px;display:grid;place-items:center;font-size:9rem">
+      <span style="filter:drop-shadow(0 16px 18px rgba(0,0,0,.28))">{{ p.product_name|emoji(p.category) }}</span></div>
+    <div style="padding:26px">
+      <h2>Customer reviews</h2>
+      {% for r in reviews %}
+        <div class="rev"><b>{{ r.customer_name }}</b> {{ stars(r.rating, 0) }}<br><span class="muted">{{ r.comment or 'No comment.' }}</span></div>
+      {% else %}<p class="muted">No reviews yet — be the first after your order is delivered.</p>{% endfor %}
+    </div>
+  </div>
+  <div class="panel">
+    <span class="badge b-Delivered">{{ p.category }}</span>
+    <h1 style="font-size:2.2rem;margin-top:10px">{{ p.product_name }}</h1>
+    <div style="margin-bottom:10px">{{ stars(p.avg_rating, p.review_count) }}</div>
+    <div class="price" style="font-size:2.2rem">{{ p.price|money }} <small>per unit</small></div>
+    <p>{{ p.description or 'Fresh from the farm.' }}</p>
+    <div class="kv" style="grid-template-columns:1fr 1fr">
+      <div><small>Farmer</small>👨‍🌾 {{ p.farmer_name }}</div><div><small>Location</small>📍 {{ p.location or '—' }}</div>
+      <div><small>Harvest date</small>🌿 {{ p.harvest_date|day }}</div><div><small>Available</small>{{ p.quantity }} units</div>
+    </div>
+    {% if me and me.role == 'customer' %}
+      <form class="buy" method="post" action="{{ url_for('cart_add') }}">
+        {{ csrf() }}<input type="hidden" name="product_id" value="{{ p.product_id }}">
+        <input type="number" name="quantity" value="1" min="1" max="{{ p.quantity }}">
+        <button class="btn" type="submit">🛒 Add to cart</button>
+        <button class="btn sun" type="submit" name="buy_now" value="1">Buy now</button>
+      </form>
+    {% elif not me %}<a class="btn block" href="{{ url_for('login_customer') }}">🔐 Login as customer to buy</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

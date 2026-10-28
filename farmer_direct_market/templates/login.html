@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% set T = {
+  'farmer':   {'icon':'👨‍🌾','title':'Farmer Login','h':'Grow it. List it. <br>Sell it direct.','p':'Reach customers directly and keep the profit that middlemen used to take.',
+               'pts':['🌱 List crops with your own price','📦 Manage orders step by step','📈 See revenue & low-stock alerts'],
+               'fl':['🚜','🌾','🌽','🍅'],'demo':'ravi@farm.com / demo123','btn':''},
+  'customer': {'icon':'🛍️','title':'Customer Login','h':'Fresh food, <br>straight from farms.','p':'Order from nearby farmers, pay your way and follow your order to the door.',
+               'pts':['🛒 Add to cart & checkout in seconds','💳 UPI, Card or Cash on Delivery','⭐ Rate what you receive'],
+               'fl':['🥭','🥕','🍆','🛒'],'demo':'anitha@mail.com / demo123','btn':'sun'},
+  'admin':    {'icon':'🛡️','title':'Administrator Login','h':'Keep the <br>marketplace healthy.','p':'See every user, product and order on the platform.',
+               'pts':['👥 Farmers & customers overview','🧾 All orders at a glance','💹 Delivered sales value'],
+               'fl':['📊','🔒','🧾','⚙️'],'demo':'admin@farm.com / admin123','btn':'berry'} } %}
+{% set t = T[role] %}
+{% block title %}{{ t.title }}{% endblock %}
+{% block content %}
+<div class="auth theme-{{ role }}">
+  <div class="auth-art">
+    <span class="floaty" style="right:8%;top:8%">{{ t.fl[0] }}</span><span class="floaty" style="right:22%;bottom:10%;animation-delay:1.2s">{{ t.fl[1] }}</span>
+    <span class="floaty" style="right:6%;bottom:30%;animation-delay:2.4s;font-size:2.2rem">{{ t.fl[2] }}</span>
+    <span class="floaty" style="left:8%;bottom:6%;animation-delay:3.2s;font-size:2.4rem">{{ t.fl[3] }}</span>
+    <div style="font-size:3.4rem">{{ t.icon }}</div>
+    <h1>{{ t.h|safe }}</h1><p>{{ t.p }}</p>
+    <ul>{% for x in t.pts %}<li>{{ x }}</li>{% endfor %}</ul>
+  </div>
+  <div class="auth-form">
+    <h2>{{ t.title }}</h2>
+    <p class="muted" style="margin-top:0">Enter your {{ role }} account details.</p>
+    <form method="post" novalidate>
+      {{ csrf() }}
+      <div class="field"><label>📧 E-mail</label><input type="email" name="email" required autofocus placeholder="you@example.com" value="{{ request.form.email }}"></div>
+      <div class="field"><label>🔑 Password</label><input type="password" name="password" required minlength="6" placeholder="••••••••"></div>
+      <button class="btn block {{ t.btn }}" type="submit">Log in as {{ role|capitalize }} →</button>
+    </form>
+    {% if show_demo %}<div class="demo">🧪 <b>Demo account:</b> {{ t.demo }}</div>{% endif %}
+    <div class="switch">
+      {% if role != 'admin' %}<a href="{{ url_for('register', role=role) }}">Create a {{ role }} account</a>{% endif %}
+      {% if role == 'farmer' %}<a href="{{ url_for('login_customer') }}">I'm a customer →</a>{% elif role == 'customer' %}<a href="{{ url_for('login_farmer') }}">I'm a farmer →</a>{% else %}<a href="{{ url_for('login_choice') }}">← Back</a>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

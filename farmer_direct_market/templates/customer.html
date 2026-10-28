@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge, pay_badge with context %}
+{% block title %}My Dashboard{% endblock %}
+{% block content %}
+<section class="dash-hero customer">
+  <div><h1>🛍️ Hello, {{ me.name.split()[0] }}!</h1><p>Track your orders and rate the produce you received.</p></div>
+  <a class="btn" style="background:#fff;color:#9a3412" href="{{ url_for('index') }}">🏪 Continue shopping</a>
+</section>
+<div class="stats">
+  <div class="stat s2"><div class="ico">📦</div><b>{{ stats.orders }}</b><span>Total orders</span></div>
+  <div class="stat s1"><div class="ico">✅</div><b>{{ stats.delivered }}</b><span>Delivered</span></div>
+  <div class="stat s3"><div class="ico">💸</div><b>{{ stats.spent|money }}</b><span>Spent on delivered orders</span></div>
+</div>
+
+<div class="panel" id="orders">
+  <h2>🧾 My orders</h2>
+  {% if orders %}
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Farmer</th><th>Date</th><th>Total</th><th>Payment</th><th>Status</th><th></th></tr>
+    {% for o in orders %}
+    <tr><td><b>#{{ o.order_id }}</b></td><td>👨‍🌾 {{ o.farmer_name }}</td><td>{{ o.order_date|dt }}</td>
+      <td><b>{{ o.total_amount|money }}</b></td><td>{{ o.payment_method }}<br>{{ pay_badge(o) }}</td><td>{{ badge(o.status) }}</td>
+      <td class="row-actions">
+        {% if o.payment_method == 'UPI' and o.payment_status == 'Pending' and o.status != 'Cancelled' %}<a class="btn sm sun" href="{{ url_for('order_pay', order_id=o.order_id) }}">📱 Pay now</a>{% endif %}
+        <a class="btn sm ghost" href="{{ url_for('receipt', order_id=o.order_id) }}">Receipt</a>
+        {% if o.status == 'Placed' and o.payment_status in ('Pending','COD') %}
+        <form method="post" action="{{ url_for('order_cancel', order_id=o.order_id) }}" onsubmit="return confirm('Cancel this order?')">{{ csrf() }}<button class="btn sm red" type="submit">✖ Cancel</button></form>{% endif %}
+      </td></tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<div class="empty"><div class="big">🛒</div><p class="muted">You have not placed any order yet.</p><a class="btn" href="{{ url_for('index') }}">Start shopping</a></div>{% endif %}
+</div>
+
+<div class="panel" id="reviews">
+  <h2>⭐ Rate your delivered products</h2>
+  {% for p in reviewable %}
+  <form method="post" action="{{ url_for('review') }}" class="rev" style="display:grid;gap:10px;grid-template-columns:1.2fr .8fr 2fr auto;align-items:end">
+    {{ csrf() }}<input type="hidden" name="product_id" value="{{ p.product_id }}">
+    <div><b style="font-size:1.1rem">{{ p.product_name|emoji(p.category) }} {{ p.product_name }}</b></div>
+    <div><label>Rating</label><select name="rating"><option value="5">★★★★★ Excellent</option><option value="4">★★★★ Good</option><option value="3">★★★ Okay</option><option value="2">★★ Poor</option><option value="1">★ Bad</option></select></div>
+    <div><label>Comment</label><input name="comment" placeholder="How was it?"></div>
+    <button class="btn sm sun" type="submit">Submit</button>
+  </form>
+  {% else %}<p class="muted">Nothing to review right now. Delivered products you have not rated yet will appear here.</p>{% endfor %}
+</div>
+{% endblock %}

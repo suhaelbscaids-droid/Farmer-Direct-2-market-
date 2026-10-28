@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Choose your login{% endblock %}
+{% block content %}
+<div class="center" style="margin-top:34px">
+  <h1 style="font-size:2.4rem">Welcome to <span class="grad-text">Farmer Direct Market</span></h1>
+  <p class="muted">Choose how you want to log in</p>
+</div>
+<div class="choice">
+  <div class="card farmer"><span class="big">👨‍🌾</span><h2>I am a Farmer</h2>
+    <p>List your crops, set your own price, manage orders and see your sales.</p>
+    <a class="btn sun" href="{{ url_for('login_farmer') }}">Farmer Login →</a></div>
+  <div class="card customer"><span class="big">🛍️</span><h2>I am a Customer</h2>
+    <p>Browse fresh produce, fill your cart, pay and track your order.</p>
+    <a class="btn" style="background:#fff;color:#9a3412" href="{{ url_for('login_customer') }}">Customer Login →</a></div>
+</div>
+<p class="center muted">New here? <a href="{{ url_for('register') }}">Create an account</a> · <a href="{{ url_for('login_admin') }}">Administrator login</a></p>
+{% endblock %}

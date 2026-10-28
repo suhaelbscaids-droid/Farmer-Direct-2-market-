@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Farmer Direct Market{% endblock %} · Farm to You</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌾</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="nav">
+  <div class="container">
+    <a class="brand" href="{{ url_for('index') }}">
+      <span class="logo">🌾</span><span>Farmer Direct<small>Farm · to · You</small></span>
+    </a>
+    <nav class="links">
+      <a href="{{ url_for('index') }}">🏪 Market</a>
+      {% if me %}
+        <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+        {% if me.role == 'customer' %}
+          <a href="{{ url_for('cart') }}">🛒 Cart{% if cart_count %}<span class="badge-count">{{ cart_count }}</span>{% endif %}</a>
+        {% endif %}
+        <span class="pill-user"><span class="avatar">{{ me.name[0]|upper }}</span>{{ me.name.split()[0] }} · {{ me.role|capitalize }}</span>
+        <a href="{{ url_for('profile') }}">⚙️ Profile</a>
+        <form method="post" action="{{ url_for('logout') }}" class="logout-form"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button type="submit" class="linklike">Logout</button></form>
+      {% else %}
+        <a class="cta" href="{{ url_for('login_farmer') }}">👨‍🌾 Farmer Login</a>
+        <a class="cta2" href="{{ url_for('login_customer') }}">🛍️ Customer Login</a>
+        <a href="{{ url_for('register') }}">Register</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flashes">
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ '✅' if cat == 'success' else '⚠️' }} {{ msg }}</div>{% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<main class="container">{% block content %}{% endblock %}</main>
+
+<footer>
+  <div class="container">
+    <p>🌾 <b>Farmer Direct Market Platform</b> — fresh produce, fair prices, no middlemen.</p>
+    <p style="opacity:.75;margin:0">Capstone Project Phase II · KPR College of Arts Science and Research · Flask + SQLite</p>
+  </div>
+</footer>
+</body>
+</html>

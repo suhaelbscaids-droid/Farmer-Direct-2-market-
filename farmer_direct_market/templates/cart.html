@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Your Cart{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🛒 Your cart & checkout</h2><a href="{{ url_for('index') }}">← Keep shopping</a></div>
+{% if lines %}
+<div class="two">
+  <div class="panel">
+    <h2>Items from 👨‍🌾 {{ lines[0].product.farmer_name }} <small class="muted">({{ lines[0].product.location }})</small></h2>
+    {% for l in lines %}
+    <div class="line">
+      <div class="thumb cat-{{ l.product.category }}">{{ l.product.product_name|emoji(l.product.category) }}</div>
+      <div class="grow"><b>{{ l.product.product_name }}</b><br><span class="muted">{{ l.product.price|money }} × {{ l.qty }}</span></div>
+      <b>{{ l.line_total|money }}</b>
+      <form method="post" action="{{ url_for('cart_remove') }}">{{ csrf() }}<input type="hidden" name="product_id" value="{{ l.product.product_id }}"><button class="btn sm ghost" type="submit">✖</button></form>
+    </div>
+    {% endfor %}
+    <form method="post" action="{{ url_for('cart_clear') }}" style="margin-top:12px">{{ csrf() }}<button class="btn sm ghost" type="submit">Clear cart</button></form>
+  </div>
+  <form class="panel" method="post" action="{{ url_for('order') }}">
+    {{ csrf() }}
+    <h2>💳 Payment & delivery</h2>
+    {% set farmer_upi = lines[0].product.farmer_upi %}
+    <div class="pay-opts">
+      <div><input type="radio" name="payment_method" id="p1" value="UPI" {{ 'checked' if farmer_upi else 'disabled' }}><label for="p1">📱 UPI — scan the QR code &amp; pay</label></div>
+      <div><input type="radio" name="payment_method" id="p3" value="Cash on Delivery" {{ '' if farmer_upi else 'checked' }}><label for="p3">💵 Cash on Delivery</label></div>
+    </div>
+    {% if farmer_upi %}<p class="pay-hint" id="hint-upi">📱 After you place the order, a <b>QR code</b> for <b>{{ total|money }}</b> is shown. Scan it with GPay, PhonePe, Paytm or any UPI app.</p>
+    {% else %}<p class="pay-hint warn">This farmer has not added a UPI ID yet, so only Cash on Delivery is available.</p>{% endif %}
+    <p class="pay-hint" id="hint-cod" style="display:none">💵 Pay the farmer in cash when your order is delivered.</p>
+    <script>
+      (function(){var u=document.getElementById('hint-upi'),c=document.getElementById('hint-cod');
+      function sync(){var cod=document.getElementById('p3').checked;if(u)u.style.display=cod?'none':'';c.style.display=cod?'':'none';}
+      document.querySelectorAll('input[name=payment_method]').forEach(function(x){x.addEventListener('change',sync)});sync();})();
+    </script>
+    <div class="field"><label>🏠 Delivery address</label><textarea name="delivery_address" required>{{ me.address }}</textarea></div>
+    <div class="sum-row"><span>Subtotal</span><span>{{ total|money }}</span></div>
+    <div class="sum-row"><span>Middlemen margin</span><span style="color:var(--leaf);font-weight:800">₹0.00 🎉</span></div>
+    <div class="sum-row sum-total"><span>Total</span><span>{{ total|money }}</span></div>
+    <button class="btn sun block" style="margin-top:14px" type="submit">✅ Place order</button>
+    <p class="muted" style="font-size:.78rem;margin-bottom:0">UPI money goes directly from you to the farmer's UPI ID — the platform never holds your money.</p>
+  </form>
+</div>
+{% else %}
+<div class="empty"><div class="big">🧺</div><h3>Your cart is empty</h3><p class="muted">Add some fresh produce from our farmers.</p><a class="btn" href="{{ url_for('index') }}">Browse products</a></div>
+{% endif %}
+{% endblock %}

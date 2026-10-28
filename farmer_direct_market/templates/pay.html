@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge, pay_badge with context %}
+{% block title %}Pay for order #{{ o.order_id }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📱 Pay by UPI · Order #{{ o.order_id }}</h2><a href="{{ url_for('dashboard') }}#orders">← My orders</a></div>
+
+{% if o.status == 'Cancelled' %}
+  <div class="cancelled-banner">❌ This order was cancelled, so no payment is needed.</div>
+{% elif o.payment_status == 'Paid' %}
+  <div class="panel center"><div class="checkmark">✓</div><h2>Payment received ✅</h2><p class="muted">{{ o.farmer_name }} has verified your payment of <b>{{ o.total_amount|money }}</b>.</p><a class="btn" href="{{ url_for('order_success', order_id=o.order_id) }}">View order</a></div>
+{% elif o.payment_status == 'Submitted' %}
+  <div class="panel center"><div class="checkmark">⏳</div><h2>Waiting for the farmer to verify</h2>
+    <p class="muted">You entered UTR <b>{{ o.payment_ref }}</b>. {{ o.farmer_name }} will confirm the payment and then pack your order.</p>
+    <a class="btn" href="{{ url_for('order_success', order_id=o.order_id) }}">View order</a></div>
+{% else %}
+<div class="two">
+  <div class="panel center qr-panel">
+    <h2>1️⃣ Scan &amp; pay</h2>
+    <div class="qr-box">{{ qr|safe }}</div>
+    <div class="qr-amount">{{ o.total_amount|money }}</div>
+    <p class="muted" style="margin:4px 0">Open <b>GPay · PhonePe · Paytm · BHIM</b> → <b>Scan any QR code</b></p>
+    <div class="kv" style="grid-template-columns:1fr 1fr;text-align:left;margin-top:16px">
+      <div><small>Pay to</small>👨‍🌾 {{ o.farmer_name }}</div>
+      <div><small>UPI ID</small><b>{{ o.farmer_upi }}</b></div>
+    </div>
+    <a class="btn sun block pay-app-link" href="{{ uri }}">📲 Open in my UPI app (on mobile)</a>
+  </div>
+  <div class="panel">
+    <h2>2️⃣ Enter the transaction reference</h2>
+    <p class="muted">After paying, your UPI app shows a <b>12-digit UTR / Transaction ID</b>. Enter it here so the farmer can verify your payment.</p>
+    <form method="post" action="{{ url_for('order_pay', order_id=o.order_id) }}">
+      {{ csrf() }}
+      <div class="field"><label>🔢 UPI transaction reference (UTR)</label>
+        <input name="utr" inputmode="numeric" pattern="\d{12}" maxlength="12" minlength="12" required placeholder="412345678901" autocomplete="off"></div>
+      <button class="btn block" type="submit">✅ I have paid — submit</button>
+    </form>
+    <hr style="border:0;border-top:1px dashed var(--line);margin:20px 0">
+    <h3>🧺 Your order</h3>
+    {% for i in items %}<div class="line"><div class="thumb cat-{{ i.category }}">{{ i.product_name|emoji(i.category) }}</div><div class="grow"><b>{{ i.product_name }}</b><br><span class="muted">{{ i.unit_price|money }} × {{ i.quantity }}</span></div><b>{{ i.line_total|money }}</b></div>{% endfor %}
+    <form method="post" action="{{ url_for('order_cancel', order_id=o.order_id) }}" onsubmit="return confirm('Cancel this order?')" style="margin-top:14px">{{ csrf() }}<button class="btn sm ghost" type="submit">✖ Cancel order</button></form>
+  </div>
+</div>
+<p class="muted center" style="font-size:.8rem">The money goes straight from your bank to the farmer's UPI ID. Never share your UPI PIN with anyone.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,59 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token }}">{% endmacro %}
+
+{% macro stars(avg, count=0) %}
+  {% if avg %}
+    <span class="stars" title="{{ avg }} / 5">
+      {% for i in range(1,6) %}{% if i <= avg|round(0,'ceil') %}★{% else %}<span class="off">★</span>{% endif %}{% endfor %}
+    </span> <small class="muted">{{ avg }}{% if count %} ({{ count }}){% endif %}</small>
+  {% else %}<small class="muted">No reviews yet</small>{% endif %}
+{% endmacro %}
+
+{% macro pay_badge(o) %}{% if o.status == 'Cancelled' %}<span class="badge pay-Cancelled">—</span>{% elif o.payment_status == 'Paid' %}<span class="badge pay-Paid">✅ Paid</span>{% elif o.payment_status == 'Submitted' %}<span class="badge pay-Submitted">🔎 Awaiting verification</span>{% elif o.payment_status == 'COD' %}<span class="badge pay-COD">💵 Pay on delivery</span>{% else %}<span class="badge pay-Pending">⏳ Payment pending</span>{% endif %}{% endmacro %}
+
+{% macro badge(status) %}<span class="badge b-{{ status }}">{{ status }}</span>{% endmacro %}
+
+{% macro tracker(status) %}
+  {% set steps = [('Placed','📝'),('Confirmed','✅'),('Packed','📦'),('Delivered','🚚')] %}
+  {% if status == 'Cancelled' %}
+    <div class="cancelled-banner">❌ This order was cancelled and the stock was returned to the farmer.</div>
+  {% else %}
+    {% set idx = ['Placed','Confirmed','Packed','Delivered'].index(status) %}
+    <div class="tracker">
+      {% for name, icon in steps %}
+        <div class="step {{ 'done' if loop.index0 <= idx }}"><div class="dot">{{ icon }}</div>{{ name }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro product_card(p) %}
+<article class="card pcard">
+  <a href="{{ url_for('product_detail', product_id=p.product_id) }}" style="color:inherit;text-decoration:none">
+    <div class="top cat-{{ p.category }}">
+      <span class="tag">{{ p.category }}</span>
+      {% if p.harvest_date %}<span class="fresh">🌿 Harvest {{ p.harvest_date|day }}</span>{% endif %}
+      <span class="emo">{{ p.product_name|emoji(p.category) }}</span>
+    </div>
+  </a>
+  <div class="body">
+    <h3>{{ p.product_name }}</h3>
+    <div class="farmer-line">👨‍🌾 {{ p.farmer_name }} · 📍 {{ p.location or 'India' }}</div>
+    <div style="margin:6px 0">{{ stars(p.avg_rating, p.review_count) }}</div>
+    <p class="muted" style="margin:0 0 8px;font-size:.88rem;min-height:40px">{{ (p.description or 'Fresh from the farm.')|truncate(70) }}</p>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="price">{{ p.price|money }} <small>/ unit</small></div>
+      <span class="stock {{ 'low' if p.quantity <= 10 }}">{{ p.quantity }} left</span>
+    </div>
+    {% if me and me.role == 'customer' %}
+      <form class="buy" method="post" action="{{ url_for('cart_add') }}">
+        {{ csrf() }}<input type="hidden" name="product_id" value="{{ p.product_id }}">
+        <input type="number" name="quantity" value="1" min="1" max="{{ p.quantity }}" aria-label="Quantity">
+        <button class="btn sm" type="submit">🛒 Add</button>
+        <button class="btn sm sun" type="submit" name="buy_now" value="1">Buy now</button>
+      </form>
+    {% elif not me %}
+      <div class="buy"><a class="btn sm block" href="{{ url_for('login_customer') }}">🔐 Login to buy</a></div>
+    {% endif %}
+  </div>
+</article>
+{% endmacro %}

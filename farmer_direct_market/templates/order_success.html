@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tracker, badge, pay_badge with context %}
+{% block title %}Order placed{% endblock %}
+{% block content %}
+<div class="panel success" style="margin-top:30px">
+  <div class="confetti">{% for c in ['#16a34a','#fbbf24','#ef4444','#9333ea','#0ea5e9','#ec4899','#a3e635','#fb923c'] %}{% set ci = loop.index0 %}{% for k in range(3) %}<i style="left:{{ (ci*12 + k*4 + 3) % 96 }}%;background:{{ c }};animation-delay:{{ (ci*0.25 + k*0.4)|round(2) }}s"></i>{% endfor %}{% endfor %}</div>
+  <div class="checkmark">✓</div>
+  <h1 class="grad-text" style="font-size:2.4rem">Order placed successfully!</h1>
+  {% if o.payment_method == 'UPI' and o.payment_status == 'Pending' and o.status != 'Cancelled' %}
+    <p class="pay-hint warn" style="max-width:560px;margin:0 auto 10px">⏳ Your UPI payment is not done yet. <a href="{{ url_for('order_pay', order_id=o.order_id) }}"><b>Scan the QR code &amp; pay →</b></a></p>
+  {% endif %}
+  <p class="muted" style="font-size:1.1rem">Thank you, {{ me.name.split()[0] }}! 👨‍🌾 <b>{{ o.farmer_name }}</b> has received your order and will confirm it soon.</p>
+  <div style="max-width:560px;margin:24px auto;text-align:left">
+    <div class="kv">
+      <div><small>Order number</small><b style="font-size:1.3rem">#{{ o.order_id }}</b></div>
+      <div><small>Status</small>{{ badge(o.status) }}</div>
+      <div><small>Payment</small>{{ o.payment_method }} · {{ pay_badge(o) }}</div>
+      <div><small>Order total</small><b style="font-size:1.3rem;color:var(--forest)">{{ o.total_amount|money }}</b></div>
+    </div>
+    {% for i in items %}<div class="line"><div class="thumb cat-{{ i.category }}">{{ i.product_name|emoji(i.category) }}</div><div class="grow"><b>{{ i.product_name }}</b><br><span class="muted">{{ i.unit_price|money }} × {{ i.quantity }}</span></div><b>{{ i.line_total|money }}</b></div>{% endfor %}
+    <p class="muted" style="margin-bottom:0">🏠 Delivering to: {{ o.delivery_address }}</p>
+  </div>
+  <div style="max-width:620px;margin:auto">{{ tracker(o.status) }}</div>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+    <a class="btn" href="{{ url_for('receipt', order_id=o.order_id) }}">🧾 View receipt</a>
+    <a class="btn sun" href="{{ url_for('index') }}">🏪 Continue shopping</a>
+    <a class="btn ghost" href="{{ url_for('dashboard') }}#orders">📦 My orders</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge, pay_badge with context %}
+{% block title %}Admin Overview{% endblock %}
+{% block content %}
+<section class="dash-hero admin"><div><h1>🛡️ Administrator Overview</h1><p>Live totals and moderation tools for the whole marketplace.</p></div></section>
+<div class="stats">
+  <div class="stat s1"><div class="ico">👨‍🌾</div><b>{{ ov.farmers }}</b><span>Farmers</span></div>
+  <div class="stat s2"><div class="ico">🛍️</div><b>{{ ov.customers }}</b><span>Customers</span></div>
+  <div class="stat s3"><div class="ico">🥕</div><b>{{ ov.products }}</b><span>Products</span></div>
+  <div class="stat s4"><div class="ico">📦</div><b>{{ ov.orders }}</b><span>Orders</span></div>
+  <div class="stat s5"><div class="ico">💹</div><b>{{ ov.sales|money }}</b><span>Delivered sales value</span></div>
+</div>
+<div class="panel" id="users"><h2>👥 Registered users</h2><div class="table-wrap"><table>
+  <tr><th>ID</th><th>Name</th><th>E-mail</th><th>Phone</th><th>Role</th><th>Location</th><th>Joined</th><th>Account</th></tr>
+  {% for u in users %}<tr><td>{{ u.user_id }}</td><td><b>{{ u.name }}</b></td><td>{{ u.email }}</td><td>{{ u.phone }}</td><td>{{ u.role|capitalize }}</td><td>{{ u.location or '—' }}</td><td>{{ u.created_at|dt }}</td>
+    <td>{% if u.role == 'admin' %}<span class="muted">—</span>{% else %}
+      <form method="post" action="{{ url_for('admin_toggle_user', user_id=u.user_id) }}" onsubmit="return confirm('{{ 'Deactivate' if u.is_active else 'Re-activate' }} {{ u.name }}?')">{{ csrf() }}
+        {% if u.is_active %}<button class="btn sm red" type="submit">⛔ Deactivate</button>{% else %}<button class="btn sm" type="submit">♻️ Re-activate</button>{% endif %}</form>
+    {% endif %}</td></tr>{% endfor %}
+</table></div></div>
+<div class="panel" id="products"><h2>🥕 All products</h2><div class="table-wrap"><table>
+  <tr><th>ID</th><th>Product</th><th>Farmer</th><th>Price</th><th>Stock</th><th></th></tr>
+  {% for p in products %}<tr><td>{{ p.product_id }}</td><td><a href="{{ url_for('product_detail', product_id=p.product_id) }}">{{ p.product_name|emoji(p.category) }} {{ p.product_name }}</a></td><td>{{ p.farmer_name }}</td><td>{{ p.price|money }}</td><td>{{ p.quantity }}</td>
+    <td><form method="post" action="{{ url_for('admin_delete_product', product_id=p.product_id) }}" onsubmit="return confirm('Remove this product?')">{{ csrf() }}<button class="btn sm red" type="submit">🗑 Remove</button></form></td></tr>
+  {% else %}<tr><td colspan="6" class="muted">No products yet.</td></tr>{% endfor %}
+</table></div><p class="muted" style="font-size:.8rem;margin-bottom:0">A product that already has orders cannot be removed (keeps order history correct).</p></div>
+<div class="panel"><h2>🧾 Latest orders</h2><div class="table-wrap"><table>
+  <tr><th>#</th><th>Customer</th><th>Farmer</th><th>Date</th><th>Total</th><th>Payment</th><th>Status</th><th></th></tr>
+  {% for o in orders %}<tr><td>#{{ o.order_id }}</td><td>{{ o.customer_name }}</td><td>{{ o.farmer_name }}</td><td>{{ o.order_date|dt }}</td><td>{{ o.total_amount|money }}</td><td>{{ o.payment_method }}<br>{{ pay_badge(o) }}</td><td>{{ badge(o.status) }}</td><td><a href="{{ url_for('receipt', order_id=o.order_id) }}">View</a></td></tr>
+  {% else %}<tr><td colspan="8" class="muted">No orders yet.</td></tr>{% endfor %}
+</table></div></div>
+{% endblock %}

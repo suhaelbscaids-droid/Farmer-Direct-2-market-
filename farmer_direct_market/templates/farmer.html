@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, badge, pay_badge with context %}
+{% block title %}Farmer Dashboard{% endblock %}
+{% block content %}
+<section class="dash-hero farmer">
+  <div><h1>🌾 Namaste, {{ me.name.split()[0] }}!</h1><p>📍 {{ me.location or 'Your farm' }} · Manage your harvest, stock and orders.</p></div>
+  <a class="btn sun" href="#add">➕ List a new product</a>
+</section>
+
+<div class="stats">
+  <div class="stat s1"><div class="ico">✅</div><b>{{ stats.delivered }}</b><span>Delivered orders</span></div>
+  <div class="stat s2"><div class="ico">💰</div><b>{{ stats.revenue|money }}</b><span>Revenue earned</span></div>
+  <div class="stat s3"><div class="ico">🏆</div><b>{{ stats.best_seller or '—' }}</b><span>Best-selling product</span></div>
+  <div class="stat s4"><div class="ico">⏳</div><b>{{ stats.pending }}</b><span>Orders in progress</span></div>
+  <div class="stat s5"><div class="ico">⚠️</div><b>{{ stats.low_stock|length }}</b><span>Low-stock products</span></div>
+</div>
+
+{% if not me.upi_id %}<div class="alerts"><a class="alert-chip" href="{{ url_for('profile') }}">⚠️ Add your UPI ID in Profile — customers cannot pay you by UPI until you do</a></div>{% endif %}
+{% if stats.to_verify %}<div class="alerts"><a class="alert-chip" href="#orders">🔎 {{ stats.to_verify }} UPI payment{{ '' if stats.to_verify == 1 else 's' }} waiting for your verification</a></div>{% endif %}
+{% if stats.low_stock %}
+<div class="alerts">
+  {% for l in stats.low_stock %}<span class="alert-chip">⚠️ {{ l.product_name }}: only {{ l.quantity }} left</span>{% endfor %}
+</div>
+{% endif %}
+
+<div class="panel" id="add">
+  <h2>➕ Add a product</h2>
+  <form method="post" action="{{ url_for('product_add') }}">
+    {{ csrf() }}
+    <div class="row">
+      <div class="field"><label>Product name</label><input name="product_name" required placeholder="Organic Tomatoes"></div>
+      <div class="field"><label>Category</label><select name="category">{% for c in CATEGORIES %}<option>{{ c }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Price per unit (₹)</label><input type="number" name="price" min="0.01" step="0.01" required></div>
+      <div class="field"><label>Quantity in stock</label><input type="number" name="quantity" min="0" required></div>
+      <div class="field"><label>Harvest date</label><input type="date" name="harvest_date"></div>
+    </div>
+    <div class="field"><label>Description</label><textarea name="description" placeholder="Grown without pesticides, picked this morning…"></textarea></div>
+    <button class="btn" type="submit">Publish product</button>
+  </form>
+</div>
+
+<div class="panel" id="products">
+  <h2>🧺 My products</h2>
+  {% if products %}
+  <div class="table-wrap"><table>
+    <tr><th>Product</th><th>Category</th><th>Harvest</th><th>Rating</th><th>Update price &amp; stock</th><th></th></tr>
+    {% for p in products %}
+    <tr>
+      <td><b>{{ p.product_name|emoji(p.category) }} {{ p.product_name }}</b></td>
+      <td>{{ p.category }}</td><td>{{ p.harvest_date|day }}</td>
+      <td>{% if p.avg_rating %}⭐ {{ p.avg_rating }} ({{ p.review_count }}){% else %}—{% endif %}</td>
+      <td><form class="inline" method="post" action="{{ url_for('product_update', product_id=p.product_id) }}">
+        {{ csrf() }}₹<input type="number" name="price" step="0.01" min="0.01" value="{{ p.price }}" aria-label="Price">
+        <input type="number" name="quantity" min="0" value="{{ p.quantity }}" aria-label="Stock">
+        <button class="btn sm" type="submit">Save</button></form>
+        <details class="edit-more"><summary>✏️ Edit all details</summary>
+          <form method="post" action="{{ url_for('product_update', product_id=p.product_id) }}">{{ csrf() }}
+            <div class="row">
+              <div class="field"><label>Name</label><input name="product_name" required value="{{ p.product_name }}"></div>
+              <div class="field"><label>Category</label><select name="category">{% for c in CATEGORIES %}<option {{ 'selected' if c == p.category }}>{{ c }}</option>{% endfor %}</select></div>
+              <div class="field"><label>Price (₹)</label><input type="number" name="price" min="0.01" step="0.01" required value="{{ p.price }}"></div>
+              <div class="field"><label>Stock</label><input type="number" name="quantity" min="0" required value="{{ p.quantity }}"></div>
+              <div class="field"><label>Harvest date</label><input type="date" name="harvest_date" value="{{ p.harvest_date }}"></div>
+            </div>
+            <div class="field"><label>Description</label><textarea name="description">{{ p.description }}</textarea></div>
+            <button class="btn sm" type="submit">Save changes</button>
+          </form>
+        </details></td>
+      <td><form method="post" action="{{ url_for('product_delete', product_id=p.product_id) }}" onsubmit="return confirm('Delete this product?')">
+        {{ csrf() }}<button class="btn sm red" type="submit">🗑</button></form></td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<p class="muted">You have not listed any product yet. Use the form above to add your first one.</p>{% endif %}
+</div>
+
+<div class="panel" id="orders">
+  <h2>📬 Orders received</h2>
+  {% for o in orders %}
+  <div class="ocard">
+    <div class="oh"><div><b>Order #{{ o.order_id }}</b> · {{ o.order_date|dt }}</div><div>{{ badge(o.status) }}</div></div>
+    <div class="muted" style="font-size:.9rem">👤 {{ o.customer_name }} · 📞 {{ o.customer_phone }} · 💳 {{ o.payment_method }} {{ pay_badge(o) }}{% if o.payment_ref %} · UTR <b>{{ o.payment_ref }}</b>{% endif %}<br>🏠 {{ o.delivery_address }}</div>
+    <div style="margin:8px 0">{% for i in items[o.order_id] %}<span class="chip" style="background:#ecfccb;color:#166534;border-color:#d9f99d">{{ i.product_name|emoji(i.category) }} {{ i.product_name }} × {{ i.quantity }}</span> {% endfor %}</div>
+    <b>Total: {{ o.total_amount|money }}</b>
+    <div class="actions">
+      {% if o.payment_method == 'UPI' and o.status != 'Cancelled' and o.payment_status in ('Pending','Submitted') %}
+        <form method="post" action="{{ url_for('order_payment', order_id=o.order_id) }}">{{ csrf() }}
+          <button class="btn sm sun" type="submit" onclick="return confirm('Confirm that ₹{{ '%.2f'|format(o.total_amount) }} has reached your UPI account?')">💰 Payment received</button></form>
+      {% endif %}
+      {% for nxt in transitions[o.status] %}
+        <form method="post" action="{{ url_for('order_status', order_id=o.order_id) }}">{{ csrf() }}
+          <input type="hidden" name="status" value="{{ nxt }}">
+          <button class="btn sm {{ 'red' if nxt == 'Cancelled' }}" type="submit">{{ {'Confirmed':'✅ Confirm','Packed':'📦 Mark packed','Delivered':'🚚 Mark delivered','Cancelled':'✖ Cancel order'}[nxt] }}</button></form>
+      {% endfor %}
+      <a class="btn sm ghost" href="{{ url_for('receipt', order_id=o.order_id) }}">🧾 Receipt</a>
+    </div>
+  </div>
+  {% else %}<p class="muted">No orders yet. They will appear here as soon as customers buy your products.</p>{% endfor %}
+</div>
+{% endblock %}

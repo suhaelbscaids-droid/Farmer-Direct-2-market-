@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf with context %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<div class="auth theme-{{ role }}">
+  <div class="auth-art">
+    <span class="floaty" style="right:10%;top:10%">{{ '🚜' if role == 'farmer' else '🛒' }}</span>
+    <span class="floaty" style="right:24%;bottom:12%;animation-delay:1.5s">{{ '🌾' if role == 'farmer' else '🥭' }}</span>
+    <div style="font-size:3.4rem">✨</div>
+    <h1>Join the <br>direct market.</h1>
+    <p>One minute to register. Choose whether you want to sell your harvest or buy fresh food.</p>
+    <ul><li>🔒 Passwords stored as secure hashes</li><li>🚫 No middlemen, ever</li><li>📱 Works on phone, tablet & laptop</li></ul>
+  </div>
+  <div class="auth-form">
+    <h2>Create your account</h2>
+    <form method="post">
+      {{ csrf() }}
+      <div class="role-pick">
+        <div><input type="radio" id="r1" name="role" value="customer" {{ 'checked' if role != 'farmer' }}><label for="r1"><span>🛍️</span>Customer</label></div>
+        <div><input type="radio" id="r2" name="role" value="farmer" {{ 'checked' if role == 'farmer' }}><label for="r2"><span>👨‍🌾</span>Farmer</label></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Full name</label><input name="name" required value="{{ form.name }}"></div>
+        <div class="field"><label>Phone (10 digits)</label><input name="phone" required pattern="\d{10}" maxlength="10" value="{{ form.phone }}"></div>
+      </div>
+      <div class="field"><label>E-mail</label><input type="email" name="email" required value="{{ form.email }}"></div>
+      <div class="field"><label>Password (min 6 characters)</label><input type="password" name="password" required minlength="6"></div>
+      <div class="field" id="upi-field"><label>🏦 UPI ID (farmers only — customers pay you to this ID)</label><input name="upi_id" value="{{ form.upi_id }}" placeholder="yourname@oksbi"></div>
+      <div class="row">
+        <div class="field"><label>Village / City</label><input name="location" value="{{ form.location }}" placeholder="Pollachi"></div>
+        <div class="field"><label>Address</label><input name="address" value="{{ form.address }}" placeholder="Street, area, pincode"></div>
+      </div>
+      <button class="btn block" type="submit">Create account →</button>
+    </form>
+    <script>
+      (function(){var f=document.getElementById('upi-field'),r=document.querySelectorAll('input[name=role]');
+      function sync(){var farmer=document.getElementById('r2').checked;f.style.display=farmer?'':'none';}
+      r.forEach(function(x){x.addEventListener('change',sync)});sync();})();
+    </script>
+    <div class="switch"><span>Already registered?</span><a href="{{ url_for('login_farmer') }}">Farmer login</a><a href="{{ url_for('login_customer') }}">Customer login</a></div>
+  </div>
+</div>
+{% endblock %}

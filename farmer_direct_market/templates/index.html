@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% from "_macros.html" import product_card with context %}
+{% block title %}Fresh from the Farm{% endblock %}
+{% block content %}
+<section class="hero">
+  <span class="floaty" style="right:6%;top:12%">🍅</span><span class="floaty" style="right:20%;top:46%;animation-delay:1s">🥭</span>
+  <span class="floaty" style="right:4%;top:58%;animation-delay:2s">🥕</span><span class="floaty" style="right:30%;top:8%;animation-delay:3s;font-size:2.4rem">🌽</span>
+  <h1>Fresh from the <span>farm</span> straight to your <span>table</span></h1>
+  <p>Buy directly from local farmers. They set the price, you see the exact rate — no wholesalers, no agents, no middlemen margin.</p>
+  <div class="chips"><span class="chip">🚫 No middlemen</span><span class="chip">💰 Fair farmer prices</span><span class="chip">🌿 Harvest-date freshness</span></div>
+  <div class="hero-stats">
+    <div><b>{{ total }}</b><span>fresh listings</span></div>
+    <div><b>100%</b><span>direct from farmers</span></div>
+    <div><b>3 steps</b><span>login · cart · pay</span></div>
+  </div>
+</section>
+
+<form class="search" method="get" action="{{ url_for('index') }}">
+  <div><label>🔍 Search product</label><input name="q" value="{{ f.q }}" placeholder="tomato, mango, milk…"></div>
+  <div><label>📂 Category</label>
+    <select name="category"><option value="">All categories</option>
+      {% for c in CATEGORIES %}<option {{ 'selected' if f.category == c }}>{{ c }}</option>{% endfor %}</select></div>
+  <div><label>💸 Max price (₹)</label><input type="number" name="max_price" min="1" step="any" value="{{ f.max_price }}" placeholder="any"></div>
+  <div><label>📍 Farmer location</label><input name="location" value="{{ f.location }}" placeholder="Pollachi, Ooty…"></div>
+  <button class="btn" type="submit">Search</button>
+</form>
+
+<div class="cat-tabs">
+  <a href="{{ url_for('index') }}" class="{{ 'on' if not f.category }}">✨ All</a>
+  {% for c, ic in [('Vegetable','🥬'),('Fruit','🍎'),('Grain','🌾'),('Other','🧺')] %}
+    <a href="{{ url_for('index', category=c) }}" class="{{ 'on' if f.category == c }}">{{ ic }} {{ c }}</a>
+  {% endfor %}
+</div>
+
+<div class="section-title">
+  <h2>{{ '🔎 Search results' if filtered else "🌟 Today's fresh picks" }}</h2>
+  <span class="muted">{{ total }} product{{ '' if total == 1 else 's' }} available</span>
+</div>
+
+{% if products %}
+  <div class="grid">{% for p in products %}{{ product_card(p) }}{% endfor %}</div>
+  {% if pages > 1 %}
+  <nav class="pager" aria-label="Pages">
+    {% set args = {'q': f.q, 'category': f.category, 'max_price': f.max_price, 'location': f.location} %}
+    {% if page > 1 %}<a href="{{ url_for('index', page=page-1, **args) }}">← Previous</a>{% endif %}
+    <span>Page {{ page }} of {{ pages }}</span>
+    {% if page < pages %}<a href="{{ url_for('index', page=page+1, **args) }}">Next →</a>{% endif %}
+  </nav>
+  {% endif %}
+{% else %}
+  <div class="empty"><div class="big">🌱</div><h3>No products match your search</h3>
+    <p class="muted">Try a different name, a higher price limit, or clear the filters.</p>
+    <a class="btn" href="{{ url_for('index') }}">Show all products</a></div>
+{% endif %}
+{% endblock %}
